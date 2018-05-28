@@ -1,67 +1,60 @@
 <!DOCTYPE html>
 <html>
-<head>
-<script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
-
-<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-
-<link href='https://fonts.googleapis.com/css?family=Alex Brush' rel='stylesheet'>
-
-<meta charset="UTF-8">
-<title>Teszlek süveg</title>
-</head>
-<style>
-	body {
-		background-color: firebrick;
-	}
-	h1{
-		padding: 50px;
-		font-family: 'Alex Brush';font-size: 30px;
-	}
-</style>
-<body>
-
-<h1 align="middle">Kattints a Teszlek Süvegre megmondja melyik házba tartozol:</h1>
-
-<main id="app" style = "display: none;">  
-	<div align="middle">
-		<img v-on:click=getSort() v-show="!sorted" src="images/sorting-hat.png"/>
-		<img v-show="sorted && house == 'Hufflepuff'" src="images/Hufflepuff.png"/>
-		<img v-show="sorted && house == 'Gryffindor'" src="images/Gryffindor.png"/>
-		<img v-show="sorted && house == 'Slytherin'" src="images/Slytherin.png"/>
-		<img v-show="sorted && house == 'Ravenclaw'" src="images/Ravenclaw.png"/>
+	<head>
+		<link rel='stylesheet' href="hpstyle.css">
 		
-	</div>
-</main>
-
-
-</body>
-<script>
-var kulsoObj = {a:1}
-
-var app = new Vue({
-  el: '#app',
-  data: {
-	  house:'',
-	  sorted:false
-  },
-  methods:{
-	  getSort: function(){
-		  let self = this;
-		  axios.get('https://www.potterapi.com/v1/sortingHat')
-		  		.then(function(response){
-			  		console.log(response);
-			  		if(!self.sorted){
-				  		self.house = response.data;
-				  		self.sorted = true;
-			  		}
-		  		});
+		<meta charset="UTF-8">
+		<title>Teszlek süveg</title>
+	
+	</head>
+	
+	<body>
+	
+		<h1 align="middle">Kattints a Teszlek Süvegre megmondja melyik házba tartozol:</h1>
+		
+		<main id="app" style = "display: none;">  
+			<div align="middle">
+				<img v-on:click=getSort() v-show="!sorted" src="images/sorting-hat.png"/>
+				<img v-show="sorted" v-bind:src="getHouseImgSrc"/>				
+			</div>
+		</main>
+	
+		<script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+		<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+	</body>
+	
+	<script>
+	
+	var app = new Vue({
+	  el: '#app',
+	  data: {
+		  house: '',
+		  sorted: false
+	  },
+	  methods: {
+		  getSort: function(){
+			  let self = this;
+			  axios.get('https://www.potterapi.com/v1/sortingHat')
+			  		.then(function(response){
+				  		console.log(response);
+				  		if(!self.sorted){
+					  		self.house = response.data;
+					  		self.sorted = true;
+				  		}
+			  		});
+		  }
+	  },
+	  computed: {
+		getHouseImgSrc: function(){
+			if(this.sorted){
+				return "images/" + this.house +".png";
+			}
+		}
+	  },
+	  mounted: function(){
+		  document.getElementById('app').style.display='block';
 	  }
-  },
-  mounted: function(){
-	  document.getElementById('app').style.display='block';
-  }
-});
-
-</script>
+	});
+	
+	</script>
 </html>
