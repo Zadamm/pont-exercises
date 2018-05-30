@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<link rel='stylesheet' href="csillagstyle.css">
+
+	<meta charset="UTF-8">
+	<title>Csillagkép Adatbázis</title>
+
+</head>
+
+<body>
+
+	<h1 align="middle">Csillagok adatbázisa</h1>
+
+	<main id="app" style="display: none;">
+		<div align="middle">
+			<div id="constSearchDiv">
+				<select v-model="searchedConstellation">
+					<option v-for="s in constellationNames">{{s.name}}</option>
+				</select>
+				<button v-on:click="getConstellation">Keress!</button>
+			</div>
+
+			<div id="starmap" style="width:400px;height:400px;"></div>
+			<!--
+				<canvas id="constellationCanvas" width="900" height="900">
+				Your browser does not support the HTML5 canvas tag.</canvas>
+				-->
+			
+			<div>
+				<img v-bind:src="constImage">
+			</div>
+
+			<h2>
+				<a v-bind:href="constWiki" v-if="found">Wiki oldal</a>
+			</h2>
+
+			<div id="ttsDiv">
+				<button v-on:click="sayConstellation" v-if="found">Mondd ki!</button>
+			</div>
+
+			<table v-if="found">
+				<th>Név</th>
+				<th>Fényesség</th>
+				<th>Tömeg</th>
+				<th>RA</th>
+				<th>DE</th>
+				<tr v-for="star in constellation.hipstars">
+					<td>{{star.name}}</td>
+					<td>{{star.mag}}</td>
+					<td>{{star.mass}}</td>
+					<td>{{star.ra}}</td>
+					<td>{{star.de}}</td>
+				</tr>
+			</table>
+
+		</div>
+
+	</main>
+
+	<script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+	
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+	
+	
+	<script type="text/javascript" src="https://rawgithub.com/hiddentao/google-tts/master/google-tts.min.js"></script>
+	
+	<script src="data/constviewer/jquery-1.10.0.min.js"></script>
+	<script src="data/constviewer/virtualsky.min.js" type="text/javascript"></script>
+
+	<script src="node_modules\talkify-tts\dist\talkify.min.js"></script>
+</body>
+
+<script>
+	var app = new Vue({
+		el: '#app',
+		data: {
+			planetarium: null, //VirtualSky's planetarium variable
+			constellationNames: [], //list of constellation names
+			constellation: [], //data of one constellation
+			searchedConstellation: '', //the searched constellation's name
+			found: false, //found the constellation
+			constImage: '', //image of constellation from Wikipedia
+			constWiki: '' //link to constellation's Wikipedia
+		},
+		methods: {
+
+			//Loading constellation's image from Wikipedia
+			getConstellationImage: function () {
+				let self = this;
+				if (this.found) {
+					axios.get('https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&titles=' +
+							self.searchedConstellation +
+							'_(constellation)&pithumbsize=500&format=json')
+						.then(function (response) {
+							console.log(response);
+							var pagelist = response.data.query.pages;
+							for (data in pagelist) {
+								self.constImage = pagelist[data].thumbnail.source;
+								break;
+							}
+						});
+				}
+
+			},
+
+			//Getting the constellation's link to Wikipedia
+			getConstellationWiki: function () {
+				let self = this;
+				if (this.found) {
+					axios.get('https://en.wikipedia.org/w/api.php?action=query&prop=info&inprop=url&titles=' +
+							self.searchedConstellation +
+							'_(constellation)&format=json')
+						.then(function (response) {
+							console.log(response);
+							var pagelist = response.data.query.pages;
+
+							for (data in pagelist) {
+								self.constWiki = pagelist[data].fullurl;
+								break;
+							}
+							console.log(pagelist)
+						});
+				}
+
+			},
+
+			//Text to speech of the Constellation's name
+			sayConstellation: function () {
+				var player = new talkify.Html5Player();
+				player.playText(this.searchedConstellation);
+			},
+
+			//Loading constellation data
+			getConstellation: function () {
+
+				//Loading constellation's abbreviation
+				var constAbbr = ''; //constellation abbreviation
+				for (con in this.constellationNames) {
+					if (this.constellationNames[con].name == this.searchedConstellation) {
+						constAbbr = this.constellationNames[con].abbreviation;
+						this.found = true;
+						break;
+					} else {
+						this.found = false;
+					}
+				};
+
+				//Loading constellation's data from an API with it's abbreviation
+				let self = this;
+				if (this.found) {
+					axios.get('http://www.astropical.space/astrodb/api.php?table=stars&which=constellation&limit=' +
+							constAbbr +
+							'&format=json')
+						.then(function (response) {
+							console.log(response);
+							self.constellation = response.data;
+
+							self.modifyPlanetarium();
+
+							self.getConstellationImage();
+
+							self.getConstellationWiki();
+						});
+				}
+
+			},
+			
+
+			//Changing the middle position of the planetarium
+			modifyPlanetarium: function () {
+				
+				var avgVal = this.constellationAvgValues();
+				
+				if(!isNaN(avgVal.xAvg)){
+					var ra = avgVal.xAvg;
+
+					console.log("ra: " + ra + " dec: " + avgVal.yAvg);
+
+					this.planetarium.panTo(ra,avgVal.yAvg,3000);
+				}
+			},
+
+			//Getting Constellation's avarage ra, de values
+			constellationAvgValues: function () {
+
+				var avarages = {
+					xAvg: 0,
+					yAvg: 0
+				};
+
+				var stars = this.constellation.hipstars;				
+				var allRa = 0, allDe = 0;
+				var numberOfStars = 0;
+
+				for(const i in stars){
+
+					allRa += stars[i].ra;
+					allDe += stars[i].de;
+					numberOfStars++
+
+				}
+				avarages.xAvg = allRa / numberOfStars;
+				avarages.yAvg = allDe / numberOfStars;
+
+				return avarages;
+			},
+
+
+			//stretching out magnitude values to be seen better
+			magnitudeStretch: function () {
+				var maxMag = 0; //maximum Magnitude
+				var minMag = 15; //minimum Magnitude
+				for (i in this.constellation.hipstars) {
+					var m = Math.abs(this.constellation.hipstars[i].mag);
+					if (m > maxMag) maxMag = m;
+					if (m < minMag) minMag = m;
+				}
+
+				//new minimum and maximum
+				if (minMag > 3) {
+					var newMinMag = minMag - 3;
+				} else {
+					var newMinMag = Math.abs(minMag - 2);
+				}
+				var newMaxMag = maxMag + 3;
+
+				//manitude avarage
+				var magAvg = (maxMag + minMag) / 2
+
+				//proportion of min and max magnitudes
+				var magMaxProp = newMaxMag / maxMag;
+				var magMinProp = newMinMag / minMag;
+
+				//calculating new magnitudes for every star in constellation
+				for (i in this.constellation.hipstars) {
+					var m = Math.abs(this.constellation.hipstars[i].mag);
+					if (m > magAvg) {
+						var distFromAvg = m - magAvg; //distance from avarage
+						var multipl = distFromAvg / magMaxProp; //multiplier calculation
+						this.constellation.hipstars[i].mag = m * multipl;
+					} else {
+						var distFromAvg = magAvg - m; //distance from avarage
+						var multipl = distFromAvg / magMaxProp; //multiplier calculation
+						this.constellation.hipstars[i].mag = m * magMinProp;
+					}
+				}
+			}
+		},
+		created: function () {
+
+			//loading list of constellationNames and their tother data
+			let self = this;
+			axios.get('http://practice.floppylab.com/pont/data/constellations.json')
+				.then(function (response) {
+					console.log(response);
+					self.constellationNames = response.data;
+				});
+
+		},
+		mounted: function () {
+			document.getElementById('app').style.display = 'block';
+
+		}
+	});
+
+	//loading planetarium API
+	$(document).ready(function () {
+		app.planetarium = $.virtualsky({
+			'id': 'starmap',
+			'projection': 'gnomic',
+			'ra': 83.8220833,
+			'dec': -5.3911111,
+			'ground': false,
+			'constellations': true,
+			'constellationlabels': true,
+			'fov': 40
+		});
+
+	});
+</script>
+
+</html>

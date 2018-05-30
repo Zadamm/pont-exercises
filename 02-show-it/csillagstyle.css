@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css?family=Antic');
+
+body {
+	background-color: black;
+	color: white;
+}
+h1 {
+	padding: 50px;
+	color: white;
+	font-family: 'Antic';
+	font-size: 30px;
+}
+
+h2 {
+	padding: 30px;
+	color: white;
+	font-family: 'Antic';
+	font-size: 20px;
+	
+}
+
+canvas {
+	border: 1px solid #d3d3d3;
+	background-color: black;
+}
+
+a:link,active {
+	color: #c0c0c0;
+    text-decoration: none;
+}
+
+a:hover {
+	color: white;
+    text-decoration: underline;
+}
+
+a:visited {
+	color: #808080;
+    text-decoration: none;
+}
+
+table {
+    border-collapse: collapse;
+}
+
+table, th, td {
+	border: 1px solid white;
+}
+
+button {
+	background-color: black;
+	color: white;
+	border-color: white;
+}
+
+#constSearchDiv{
+	width: 400px;
+	height: 20px;
+}
+
+#constSearchDiv select{
+	height: 100%;
+    width: 80%;
+	float: left;
+	background-color: black;
+	color: white;
+}
+
+#constSearchDiv button {
+    height: 100%;
+    width: 20%;
+    float: right;
+}
+
+#ttsDiv{
+	padding: 30px;
+}
